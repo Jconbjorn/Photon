@@ -43,16 +43,21 @@
     .diagram-card { position: static; box-shadow: none; border: 1px solid #48484a; }
   }
   @media (max-width: 899px) {
-    .container { display: block; }
+    .container { display: block; padding-top: 0; }
     .side-col { }
     .diagram-card {
-      position: sticky;
+      position: fixed;
       top: 8px;
-      z-index: 10;
+      left: 8px;
+      right: 8px;
+      z-index: 50;
       background: #1a1a1c;
       border: 1px solid #48484a;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+      max-height: 42vh;
+      overflow-y: auto;
     }
+    .main-col { padding-top: 46vh; }
   }
   header {
     display: flex;
