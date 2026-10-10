@@ -425,8 +425,8 @@ automatically uses a circle solid angle in that case.</pre>
 
 Diffusion materials scatter more light forward than a perfect
 Lambertian surface, modelled here as a multiplier on luminance.
-Material-specific bias values range from 1.4× (Light Opal —
-directional) to 2.0× (Full Grid Cloth — broad even scatter).</pre>
+Material-specific bias values range from ~1.05× (Light Opal —
+mild forward preference) to ~1.15× (Full Grid Cloth).</pre>
       <h3>Booklight</h3>
       <pre>A three-stage cascade — light hits a bounce card,
 reflects to a diffusion panel, then transmits to the subject:
@@ -519,19 +519,18 @@ White Wall           0.75
 
 Values are approximate — manufacturer and age affect results.</pre>
       <h3>Diffusion Materials (transmissivity τ / bias)</h3>
-      <pre>Full Grid Cloth      0.45  /  2.0×
-Half Grid Cloth      0.60  /  1.8×
-Quarter Grid Cloth   0.75  /  1.6×
-Light Grid Cloth     0.90  /  1.4×
-Full Silk            0.50  /  1.7×
-Half Silk            0.65  /  1.6×
-Quarter Silk         0.80  /  1.5×
-Light Opal           0.70  /  1.4×
+      <pre>Full Grid Cloth      0.28  /  1.15×
+Half Grid Cloth      0.45  /  1.15×
+Quarter Grid Cloth   0.62  /  1.12×
+Light Grid Cloth     0.78  /  1.08×
+Full Silk            0.38  /  1.12×
+Half Silk            0.55  /  1.10×
+Quarter Silk         0.70  /  1.08×
+Light Opal           0.75  /  1.05×
 
 Forward bias represents how much light is concentrated forward
 relative to a perfect Lambertian surface (bias = 1.0).
-Higher bias = broader, more even illumination pattern;
-lower bias = harder, more directional.</pre>
+Higher bias = slightly broader scatter; lower bias = more directional.</pre>
       <p class="note">Values are from manufacturer data sheets and field measurements. They may vary by product condition and manufacturer.</p>
     </div>
   </div>
@@ -550,15 +549,15 @@ const bounceMaterials = [
   { name: "Custom", value: 0 }
 ];
 const diffusionMaterials = [
-  { name: "Full Grid Cloth", value: 0.45, bias: 2.0 },
-  { name: "Half Grid Cloth", value: 0.60, bias: 1.8 },
-  { name: "Quarter Grid Cloth", value: 0.75, bias: 1.6 },
-  { name: "Light Grid Cloth", value: 0.90, bias: 1.4 },
-  { name: "Full Silk", value: 0.50, bias: 1.7 },
-  { name: "Half Silk", value: 0.65, bias: 1.6 },
-  { name: "Quarter Silk", value: 0.80, bias: 1.5 },
-  { name: "Light Opal", value: 0.70, bias: 1.4 },
-  { name: "Custom", value: 0, bias: 1.5 }
+  { name: "Full Grid Cloth", value: 0.28, bias: 1.15 },
+  { name: "Half Grid Cloth", value: 0.45, bias: 1.15 },
+  { name: "Quarter Grid Cloth", value: 0.62, bias: 1.12 },
+  { name: "Light Grid Cloth", value: 0.78, bias: 1.08 },
+  { name: "Full Silk", value: 0.38, bias: 1.12 },
+  { name: "Half Silk", value: 0.55, bias: 1.10 },
+  { name: "Quarter Silk", value: 0.70, bias: 1.08 },
+  { name: "Light Opal", value: 0.75, bias: 1.05 },
+  { name: "Custom", value: 0, bias: 1.1 }
 ];
 
 // Approximate published photometric presets (fc at reference distance, beam angle).
