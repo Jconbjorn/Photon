@@ -1,0 +1,1735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Photon</title>
+<style>
+  :root {
+    --bg: #1c1c1e;
+    --card: #2c2c2e;
+    --border: #3a3a3c;
+    --text: #f2f2f7;
+    --secondary: #8e8e93;
+    --accent: #0a84ff;
+    --accent-hover: #409cff;
+    --danger: #ff453a;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    --yellow: #ffd60a;
+    --orange: #ff9f0a;
+    --cyan: #64d2ff;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.4;
+  }
+  .container { max-width: 1200px; margin: 0 auto; padding: 16px; }
+  @media (min-width: 900px) {
+    .container { display: flex; gap: 24px; align-items: flex-start; }
+    header { position: absolute; top: 0; left: 0; right: 0; padding: 12px 16px; border-bottom: 1px solid var(--border); background: var(--bg); z-index: 20; }
+    .main-col { flex: 1; min-width: 0; padding-top: 70px; }
+    .side-col {
+      width: 420px;
+      flex-shrink: 0;
+      position: sticky;
+      top: 80px;
+      height: calc(100vh - 100px);
+      overflow-y: auto;
+    }
+    .diagram-card { position: static; box-shadow: none; border: 1px solid #48484a; }
+  }
+  @media (max-width: 899px) {
+    .container { display: block; }
+    .side-col { }
+    .diagram-card {
+      position: sticky;
+      top: 8px;
+      z-index: 10;
+      background: #1a1a1c;
+      border: 1px solid #48484a;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+    }
+  }
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+  header h1 { font-size: 22px; font-weight: 700; margin: 0; }
+  .header-actions { display: flex; gap: 12px; align-items: center; }
+  button, select, input {
+    font-family: inherit;
+    font-size: 15px;
+    color: var(--text);
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+  }
+  button { cursor: pointer; background: transparent; }
+  button.primary {
+    background: var(--accent);
+    border: none;
+    color: white;
+    font-weight: 600;
+    padding: 14px;
+    width: 100%;
+    border-radius: 10px;
+    font-size: 17px;
+  }
+  button.primary:hover { background: var(--accent-hover); }
+  .icon-btn { padding: 6px 10px; font-size: 16px; }
+  .segmented {
+    display: flex;
+    background: var(--card);
+    border-radius: 10px;
+    padding: 4px;
+    margin-bottom: 16px;
+  }
+  .segmented button {
+    flex: 1;
+    border: none;
+    background: transparent;
+    padding: 8px 4px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .segmented button.active { background: #3a3a3c; }
+  .card {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .card h3 { margin: 0 0 12px; font-size: 17px; font-weight: 600; }
+  .field { margin-bottom: 12px; }
+  .field label { display: block; font-size: 13px; color: var(--secondary); margin-bottom: 4px; }
+  .field input, .field select { width: 100%; }
+  .row { display: flex; gap: 12px; }
+  .row .field { flex: 1; }
+  .results { font-size: 14px; }
+  .result-row { display: flex; justify-content: space-between; margin-bottom: 6px; }
+  .result-row .label { color: var(--secondary); }
+  .result-row .value { font-weight: 600; }
+  .fstop-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+  }
+  .fstop { font-size: 34px; font-weight: 700; color: var(--accent); }
+  .fstop-label { color: var(--secondary); font-size: 14px; }
+  .about pre, .about p {
+    font-family: var(--mono);
+    font-size: 13px;
+    white-space: pre-wrap;
+    color: #e5e5ea;
+  }
+  .about h2 { font-size: 28px; margin: 0 0 8px; }
+  .about h3 { font-size: 20px; margin: 20px 0 8px; }
+  .note { font-size: 12px; color: var(--secondary); margin-top: 8px; }
+  .hidden { display: none; }
+  footer { text-align: center; color: var(--secondary); font-size: 12px; margin: 32px 0 16px; }
+  .diagram-svg { width: 100%; height: auto; display: block; min-height: 200px; }
+  .coverage-svg { width: 110px; height: 90px; flex-shrink: 0; }
+  .coverage-row { display: flex; gap: 16px; align-items: flex-start; }
+  .coverage-text { flex: 1; font-size: 13px; }
+  .coverage-text .title { font-weight: 500; margin-bottom: 4px; }
+  .coverage-text .detail { font-family: var(--mono); font-size: 12px; color: var(--yellow); margin-bottom: 4px; }
+  .coverage-text .note { font-size: 12px; color: var(--secondary); }
+  .info-dot { color: var(--accent); cursor: help; font-size: 12px; margin-left: 4px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>Photon</h1>
+    <div class="header-actions">
+      <button class="icon-btn" id="unitBtn" title="Toggle units">ft</button>
+      <button class="icon-btn" id="clearBtn" title="Clear">✕</button>
+      <button class="icon-btn" id="aboutBtn" title="About">ⓘ</button>
+    </div>
+  </header>
+
+  <div class="side-col">
+    <div class="card diagram-card">
+      <h3>Light Path</h3>
+      <svg id="diagramSvg" class="diagram-svg" viewBox="0 0 400 200"></svg>
+      <div id="resultsCard" class="card hidden" style="margin:12px 0 0; padding:12px; background:#1c1c1e; border:none;">
+        <div id="resultsBody"></div>
+      </div>
+      <div class="card hidden" id="coverageCard" style="margin:12px 0 0; padding:12px; background:#1c1c1e; border:none;">
+        <h3 style="font-size:14px; margin-bottom:8px;">Beam Coverage</h3>
+        <div class="coverage-row">
+          <svg id="coverageSvg" class="coverage-svg" viewBox="0 0 110 90"></svg>
+          <div class="coverage-text" id="coverageText"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="calcView" class="main-col">
+    <div class="segmented" id="scenarioPicker">
+      <button data-s="point" class="active">Point</button>
+      <button data-s="bounce">Bounce</button>
+      <button data-s="diffusion">Diffusion</button>
+      <button data-s="booklight">Booklight</button>
+    </div>
+
+    <div class="card">
+      <h3>Fixture Preset <span class="note">(approx. published values — verify on your unit)</span></h3>
+      <div class="row">
+        <div class="field">
+          <label>Brand</label>
+          <select id="fixtureBrand"></select>
+        </div>
+        <div class="field">
+          <label>Light</label>
+          <select id="fixtureLight"></select>
+        </div>
+        <div class="field">
+          <label>Modifier</label>
+          <select id="fixtureMod"></select>
+        </div>
+      </div>
+      <div id="fresnelControl" class="field hidden" style="margin-top:12px;">
+        <label>Fresnel beam angle: <span id="fresnelAngleLabel">15°</span> <span id="fresnelRangeLabel"></span></label>
+        <input type="range" id="fresnelSlider" min="0" max="100" step="1" value="0" style="width:100%;">
+        <div class="note" style="margin-top:6px; color:#f59e0b;">
+          Warning: Intermediate Fresnel angles are linearly interpolated estimates only. Only the published spot and flood endpoints match measured data. On-axis intensity does not scale linearly with beam angle in a real Fresnel.
+        </div>
+      </div>
+      <div id="fixtureNote" class="note" style="margin-top:8px;"></div>
+    </div>
+
+    <div class="card hidden" id="basicParamsCard">
+      <h3>Basic Parameters</h3>
+      <div class="field">
+        <label id="illumLabel">Illuminance: <span id="illumVal">1000</span></label>
+        <input type="range" id="illuminance" min="10" max="200000" step="10" value="1000" style="width:100%;">
+        <input type="number" id="illuminanceNum" value="1000" step="any" style="margin-top:4px; width:100%;">
+      </div>
+      <div class="field">
+        <label id="refLabel">Reference Distance: <span id="refVal">10</span></label>
+        <input type="range" id="refDistance" min="1" max="200" step="0.5" value="10" style="width:100%;">
+        <input type="number" id="refDistanceNum" value="10" step="any" style="margin-top:4px; width:100%;">
+      </div>
+      <div class="field">
+        <label>Beam Angle: <span id="beamVal">45°</span></label>
+        <input type="range" id="beamAngle" min="5" max="170" step="1" value="45" style="width:100%;">
+        <input type="number" id="beamAngleNum" value="45" step="any" style="margin-top:4px; width:100%;">
+      </div>
+    </div>
+
+    <div class="card" id="pointCard">
+      <h3>Point Light Parameters</h3>
+      <div class="field">
+        <label id="distLabel">Distance to Subject: <span id="distVal">10</span></label>
+        <input type="range" id="distance" min="1" max="200" step="0.5" value="10" style="width:100%;">
+        <input type="number" id="distanceNum" value="10" step="any" style="margin-top:4px; width:100%;">
+      </div>
+    </div>
+
+    <div class="card hidden" id="bounceDiffCard">
+      <h3 id="bdTitle">Bounce Parameters</h3>
+      <div class="row">
+        <div class="field">
+          <label id="wLabel">Width: <span id="wVal">4</span></label>
+          <input type="range" id="width" min="1" max="100" step="0.5" value="4" style="width:100%;">
+        </div>
+        <div class="field">
+          <label id="hLabel">Height: <span id="hVal">4</span></label>
+          <input type="range" id="height" min="1" max="100" step="0.5" value="4" style="width:100%;">
+        </div>
+      </div>
+      <div class="field" style="margin-top:-4px;">
+        <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:var(--secondary);">
+          <input type="checkbox" id="linkSize" checked style="width:auto;"> Link width & height
+        </label>
+      </div>
+      <div class="field">
+        <label id="d1Label">Light to Material: <span id="d1Val">5</span></label>
+        <input type="range" id="distanceToMaterial" min="1" max="150" step="0.5" value="5" style="width:100%;">
+        <input type="number" id="distanceToMaterialNum" value="5" step="any" style="margin-top:4px; width:100%;">
+      </div>
+      <div class="field">
+        <label id="d2Label">Material to Subject: <span id="d2Val">5</span></label>
+        <input type="range" id="distanceToSubject" min="1" max="150" step="0.5" value="5" style="width:100%;">
+        <input type="number" id="distanceToSubjectNum" value="5" step="any" style="margin-top:4px; width:100%;">
+      </div>
+      <div class="field" id="incidenceField">
+        <label>Angle of incidence: <span id="incLabel">0°</span></label>
+        <input type="range" id="incidenceAngle" min="0" max="80" step="1" value="0" style="width:100%;">
+      </div>
+      <div class="field">
+        <label id="matLabel">Bounce material</label>
+        <select id="materialSelect"></select>
+      </div>
+      <div class="field hidden" id="customPropField">
+        <label id="propLabel">Reflectivity (0–1)</label>
+        <input type="number" id="materialProperty" step="0.01" min="0" max="1">
+      </div>
+      <div class="field hidden" id="customBiasField">
+        <label>Forward Bias (1.0–3.0)</label>
+        <input type="number" id="customForwardBias" step="0.1" value="1.5" min="1" max="3">
+      </div>
+    </div>
+
+    <div class="card hidden" id="booklightCard">
+      <h3>Booklight Parameters</h3>
+      <h4 style="margin:0 0 8px; font-size:15px;">Bounce Surface</h4>
+      <div class="row">
+        <div class="field">
+          <label id="bwLabel">Width: <span id="bwVal">4</span></label>
+          <input type="range" id="bounceWidth" min="1" max="100" step="0.5" value="4" style="width:100%;">
+        </div>
+        <div class="field">
+          <label id="bhLabel">Height: <span id="bhVal">4</span></label>
+          <input type="range" id="bounceHeight" min="1" max="100" step="0.5" value="4" style="width:100%;">
+        </div>
+      </div>
+      <div class="field" style="margin-top:-4px;">
+        <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:var(--secondary);">
+          <input type="checkbox" id="linkBounceSize" checked style="width:auto;"> Link width & height
+        </label>
+      </div>
+      <div class="field">
+        <label id="dBLabel">Light to Bounce: <span id="dBVal">4</span></label>
+        <input type="range" id="distanceToBounceSurface" min="1" max="150" step="0.5" value="4" style="width:100%;">
+      </div>
+      <div class="field">
+        <label>Angle of incidence: <span id="bounceIncLabel">0°</span></label>
+        <input type="range" id="bounceIncidenceAngle" min="0" max="80" step="1" value="0" style="width:100%;">
+      </div>
+      <div class="field">
+        <label>Bounce material</label>
+        <select id="bounceMatSelect"></select>
+      </div>
+      <div class="field hidden" id="bounceCustomField">
+        <label>Reflectivity (0–1)</label>
+        <input type="number" id="bounceReflectivity" step="0.01" min="0" max="1">
+      </div>
+
+      <h4 style="margin:16px 0 8px; font-size:15px;">Diffusion Surface</h4>
+      <div class="row">
+        <div class="field">
+          <label id="dwLabel">Width: <span id="dwVal">4</span></label>
+          <input type="range" id="diffusionWidth" min="1" max="100" step="0.5" value="4" style="width:100%;">
+        </div>
+        <div class="field">
+          <label id="dhLabel">Height: <span id="dhVal">4</span></label>
+          <input type="range" id="diffusionHeight" min="1" max="100" step="0.5" value="4" style="width:100%;">
+        </div>
+      </div>
+      <div class="field" style="margin-top:-4px;">
+        <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:var(--secondary);">
+          <input type="checkbox" id="linkDiffSize" checked style="width:auto;"> Link width & height
+        </label>
+      </div>
+      <div class="field">
+        <label id="dBDLabel">Bounce to Diffusion: <span id="dBDVal">3</span></label>
+        <input type="range" id="bounceToDistanceDiffusion" min="1" max="100" step="0.5" value="3" style="width:100%;">
+      </div>
+      <div class="field">
+        <label>Diffusion material</label>
+        <select id="diffMatSelect"></select>
+      </div>
+      <div class="field hidden" id="diffCustomField">
+        <label>Transmissivity (0–1)</label>
+        <input type="number" id="diffusionTransmissivity" step="0.01" min="0" max="1">
+      </div>
+      <div class="field hidden" id="diffBiasField">
+        <label>Forward Bias (1.0–3.0)</label>
+        <input type="number" id="customDiffusionForwardBias" step="0.1" value="1.5" min="1" max="3">
+      </div>
+
+      <h4 style="margin:16px 0 8px; font-size:15px;">Subject</h4>
+      <div class="field">
+        <label id="dSLabel">Diffusion to Subject: <span id="dSVal">4</span></label>
+        <input type="range" id="diffusionToSubject" min="1" max="150" step="0.5" value="4" style="width:100%;">
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Camera Settings</h3>
+      <div class="field"><label>ISO</label><input type="number" id="iso" value="800" placeholder="e.g. 800"></div>
+      <div class="segmented" id="shutterPicker" style="margin-bottom:12px;">
+        <button data-t="speed">Speed</button>
+        <button data-t="angle" class="active">Angle</button>
+      </div>
+      <div id="speedFields" class="hidden">
+        <div class="field"><label>Shutter Speed (s)</label><input type="text" id="shutterSpeed" placeholder="e.g. 1/50 or 0.02"></div>
+      </div>
+      <div id="angleFields">
+        <div class="row">
+          <div class="field"><label>Shutter Angle (°)</label><input type="number" id="shutterAngle" value="180"></div>
+          <div class="field"><label>FPS</label><input type="number" id="fps" value="24"></div>
+        </div>
+      </div>
+    </div>
+
+    </div>
+  </div>
+
+  <div id="aboutView" class="hidden about">
+    <div class="segmented" style="margin-bottom:20px;">
+      <button id="howTab" class="active">How It Works</button>
+      <button id="matTab">Materials</button>
+    </div>
+    <div id="howContent">
+      <h2>How It Works</h2>
+      <h3>Light Source Model</h3>
+      <pre>All scenarios start with a light whose output is specified as
+illuminance at a reference distance:
+
+  E₀  =  illuminance (fc or lux) at d₀
+
+The inverse square law then gives illuminance at any other distance d:
+
+  E  =  E₀ × (d₀ / d)²
+
+This is exact for a point source and a very good approximation
+for most production fixtures.</pre>
+      <h3>Point Light</h3>
+      <pre>Direct calculation:
+
+  E_subject  =  E₀ × (d₀ / d)²
+  Beam diameter  =  2d × tan(θ / 2)
+
+No intermediate surface — light goes straight to the subject.</pre>
+      <h3>Bounce Light</h3>
+      <pre>A matte surface is illuminated and re-emits light toward the subject.
+
+  E₁  =  E₀ × (d₀ / d₁)²          illuminance at surface
+  L   =  ρ × E₁ / π                 Lambertian luminance
+  E₂  =  L × Ω                      illuminance at subject
+
+Ω is the solid angle of the effective source area as seen from
+the subject. If the beam footprint is smaller than the material,
+only the illuminated area contributes — the calculator
+automatically uses a circle solid angle in that case.</pre>
+      <h3>Diffusion</h3>
+      <pre>Identical to bounce but with a material-specific forward bias:
+
+  L  =  τ × E₁ × bias / π
+
+Diffusion materials scatter more light forward than a perfect
+Lambertian surface, modelled here as a multiplier on luminance.
+Material-specific bias values range from 1.4× (Light Opal —
+directional) to 2.0× (Full Grid Cloth — broad even scatter).</pre>
+      <h3>Booklight</h3>
+      <pre>A three-stage cascade — light hits a bounce card,
+reflects to a diffusion panel, then transmits to the subject:
+
+  Stage 1 — Light → Bounce
+    E₁  =  E₀ × (d₀ / d₁)²
+
+  Stage 2 — Bounce → Diffusion
+    L₁  =  ρ × E₁ / π
+    E₂  =  L₁ × Ω₁          (bounce solid angle to diffusion)
+
+  Stage 3 — Diffusion → Subject
+    L₂  =  τ × E₂ × bias / π
+    E₃  =  L₂ × Ω₂          (diffusion solid angle to subject)</pre>
+      <h3>f-stop Formula</h3>
+      <pre>The app uses the incident-light exposure equation:
+
+  N²  =  E_fc × ISO × t / C    (C = 25 for foot-candles)
+       =  E_lux × ISO × t / 250  (equivalent in lux)
+
+This matches a Sekonic incident meter reading. The constant
+C = 25 is the foot-candle equivalent of the standard lux
+incident constant (~250).
+
+Note: C = 12.5 would be correct only if E were luminance
+in cd/m² (reflected-light formula) — an earlier version of
+this calculator used that constant incorrectly with illuminance,
+producing results about 4.5 stops too high.</pre>
+      <h3>Solid Angle</h3>
+      <pre>Earlier versions used the paraxial approximation Ω ≈ A/d²,
+which accumulates error when surfaces are close to the subject.
+
+This version uses exact formulas:
+
+  Rectangle (half-dims a, b at distance d):
+    Ω  =  4 · arctan( a·b / (d·√(a²+b²+d²)) )
+
+  Circle (radius r at distance d):
+    Ω  =  2π · (1 − d/√(d²+r²))
+
+The calculator automatically selects the circle formula when
+the beam footprint is smaller than the material, and the
+rectangle formula when the beam covers the full material.</pre>
+      <h3>Assumptions</h3>
+      <pre>• Surfaces are perfectly matte (Lambertian) — specular
+  or semi-specular materials are not supported
+• Light is centred on each surface and aimed perpendicularly
+• Beam is circular with uniform illumination across
+  its footprint — real beams are brighter at the center
+  and fall off toward the edges
+• Each surface has uniform luminance — the calculator
+  computes brightness at the center of the material and
+  applies it to the entire area
+• In booklight mode, non-uniform illumination compounds
+  across both stages (bounce → diffusion → subject)</pre>
+      <h3>Accuracy</h3>
+      <pre>The solid angle formulas are exact for the geometry —
+they correctly account for light arriving from steep
+angles at the edges of large, close sources.
+
+The main source of error is the uniform luminance
+assumption. When the beam barely covers the material,
+the center is significantly brighter than the edges,
+but the calculator treats them equally.
+
+This matters most when:
+• The beam diameter is close to the material size
+• The subject is very close to a large source
+• Multiple stages cascade (booklight)
+
+For typical studio setups, expect results within
+±1/3 to ±1/2 stop of a meter reading — well within
+working tolerance for pre-lighting estimates. Always
+meter on set for critical exposure.</pre>
+    </div>
+    <div id="matContent" class="hidden">
+      <h2>Materials Reference</h2>
+      <h3>Important Note</h3>
+      <pre>This calculator models only perfectly diffuse (Lambertian) surfaces.
+Specular or semi-specular materials — silver laminates, mirrors,
+metallic reflectors — are NOT supported and will produce
+inaccurate results.</pre>
+      <h3>Bounce Materials (reflectivity ρ)</h3>
+      <pre>Ultrabounce          0.85
+White Foam Core      0.85
+Bleached Muslin      0.80
+Unbleached Muslin    0.65
+Beadboard            0.85
+White Wall           0.75
+
+Values are approximate — manufacturer and age affect results.</pre>
+      <h3>Diffusion Materials (transmissivity τ / bias)</h3>
+      <pre>Full Grid Cloth      0.45  /  2.0×
+Half Grid Cloth      0.60  /  1.8×
+Quarter Grid Cloth   0.75  /  1.6×
+Light Grid Cloth     0.90  /  1.4×
+Full Silk            0.50  /  1.7×
+Half Silk            0.65  /  1.6×
+Quarter Silk         0.80  /  1.5×
+Light Opal           0.70  /  1.4×
+
+Forward bias represents how much light is concentrated forward
+relative to a perfect Lambertian surface (bias = 1.0).
+Higher bias = broader, more even illumination pattern;
+lower bias = harder, more directional.</pre>
+      <p class="note">Values are from manufacturer data sheets and field measurements. They may vary by product condition and manufacturer.</p>
+    </div>
+  </div>
+
+  <footer>Photon · Photometric calculator for cinematographers</footer>
+</div>
+
+<script>
+const bounceMaterials = [
+  { name: "Ultrabounce", value: 0.85 },
+  { name: "White Foam Core", value: 0.85 },
+  { name: "Bleached Muslin", value: 0.80 },
+  { name: "Unbleached Muslin", value: 0.65 },
+  { name: "Beadboard", value: 0.85 },
+  { name: "White Wall (flat paint)", value: 0.75 },
+  { name: "Custom", value: 0 }
+];
+const diffusionMaterials = [
+  { name: "Full Grid Cloth", value: 0.45, bias: 2.0 },
+  { name: "Half Grid Cloth", value: 0.60, bias: 1.8 },
+  { name: "Quarter Grid Cloth", value: 0.75, bias: 1.6 },
+  { name: "Light Grid Cloth", value: 0.90, bias: 1.4 },
+  { name: "Full Silk", value: 0.50, bias: 1.7 },
+  { name: "Half Silk", value: 0.65, bias: 1.6 },
+  { name: "Quarter Silk", value: 0.80, bias: 1.5 },
+  { name: "Light Opal", value: 0.70, bias: 1.4 },
+  { name: "Custom", value: 0, bias: 1.5 }
+];
+
+// Approximate published photometric presets (fc at reference distance, beam angle).
+// Always verify against your specific unit, firmware, and modifiers.
+const fixtureData = {
+  "Aputure": {
+    "STORM XT52": [
+      { mod: "Bare (93°)", fc: 2051, dist: 9.8, angle: 93 },
+      { mod: "+ 50° reflector", fc: 6355, dist: 9.8, angle: 50 },
+      { mod: "+ 35° reflector", fc: 11557, dist: 9.8, angle: 35 },
+      { mod: "+ 25° reflector", fc: 20625, dist: 9.8, angle: 25 },
+      { mod: "+ 20° reflector", fc: 12681, dist: 16.4, angle: 20 }
+    ],
+    "STORM 1200x": [
+      { mod: "Bare", fc: 789, dist: 9.8, angle: 105 },
+      { mod: "+ 45° reflector", fc: 2090, dist: 9.8, angle: 45 },
+      { mod: "+ 15° reflector", fc: 8931, dist: 9.8, angle: 15 },
+      { mod: "+ CF12 Fresnel", fresnel: true, spot: { fc: 7844, angle: 15 }, flood: { fc: 1571, angle: 45 }, dist: 9.8 }
+    ],
+    "STORM 700x": [
+      { mod: "Bare 5600K", fc: 5102, dist: 3.3, angle: 70 },
+      { mod: "+ 35° reflector", fc: 1735, dist: 9.8, angle: 35 },
+      { mod: "+ 25° reflector", fc: 2527, dist: 9.8, angle: 25 },
+      { mod: "+ CF10 Fresnel", fresnel: true, spot: { fc: 5223, angle: 15 }, flood: { fc: 1106, angle: 40 }, dist: 9.8 }
+    ],
+    "STORM 400x": [
+      { mod: "Bare 5600K", fc: 2518, dist: 3.3, angle: 57 },
+      { mod: "+ 35° reflector", fc: 6001, dist: 3.3, angle: 35 },
+      { mod: "+ CF7 Fresnel", fresnel: true, spot: { fc: 21989, angle: 15 }, flood: { fc: 5007, angle: 40 }, dist: 3.3 }
+    ],
+    "STORM 80c": [
+      { mod: "Bare (60°)", fc: 604, dist: 3.3, angle: 60 },
+      { mod: "+ Hyper Reflector (35°)", fc: 1845, dist: 3.3, angle: 35 },
+      { mod: "+ CF4 Fresnel", fresnel: true, spot: { fc: 3345, angle: 15 }, flood: { fc: 1161, angle: 40 }, dist: 3.3 }
+    ],
+    "Electro Storm XT26": [
+      { mod: "Bare (62°)", fc: 1052, dist: 9.8, angle: 62 },
+      { mod: "+ 50° reflector", fc: 3122, dist: 9.8, angle: 50 },
+      { mod: "+ 35° reflector", fc: 6057, dist: 9.8, angle: 35 },
+      { mod: "+ 20° reflector", fc: 17940, dist: 9.8, angle: 20 }
+    ],
+    "Electro Storm CS15": [
+      { mod: "Bare", fc: 515, dist: 9.8, angle: 78 },
+      { mod: "+ 50° reflector", fc: 1555, dist: 9.8, angle: 50 },
+      { mod: "+ 35° reflector", fc: 3029, dist: 9.8, angle: 35 },
+      { mod: "+ 20° reflector", fc: 8779, dist: 9.8, angle: 20 }
+    ],
+    "STORM CS32": [
+      { mod: "Bare (78°)", fc: 1394, dist: 9.8, angle: 78 },
+      { mod: "+ 30° reflector", fc: 9848, dist: 9.8, angle: 30 }
+    ],
+    "LS 1200d Pro": [
+      { mod: "Bare", fc: 598, dist: 9.8, angle: 66 },
+      { mod: "+ Hyper Reflector (Narrow)", fc: 7788, dist: 9.8, angle: 15 },
+      { mod: "+ Hyper Reflector (Medium)", fc: 2099, dist: 9.8, angle: 30 },
+      { mod: "+ Hyper Reflector (Wide)", fc: 1364, dist: 9.8, angle: 45 }
+    ],
+    "LS 600c Pro": [
+      { mod: "Bare 5600K", fc: 1528, dist: 3.3, angle: 93 },
+      { mod: "+ Hyper Reflector", fc: 4747, dist: 3.3, angle: 62 },
+      { mod: "+ F10 Fresnel", fresnel: true, spot: { fc: 5323, angle: 15 }, flood: { fc: 2369, angle: 45 }, dist: 3.3 }
+    ],
+    "LS 600d Pro": [
+      { mod: "Bare", fc: 2058, dist: 3.3, angle: 105 },
+      { mod: "+ Hyper Reflector", fc: 9150, dist: 3.3, angle: 55 },
+      { mod: "+ F10 Fresnel", fresnel: true, spot: { fc: 20836, angle: 15 }, flood: { fc: 8289, angle: 45 }, dist: 3.3 }
+    ],
+    "amaran 300c": [
+      { mod: "Bare 5600K", fc: 871, dist: 3.3, angle: 90 },
+      { mod: "+ Hyper Reflector", fc: 2470, dist: 3.3, angle: 65 },
+      { mod: "+ 2X Fresnel", fresnel: true, spot: { fc: 4050, angle: 15 }, flood: { fc: 2335, angle: 45 }, dist: 3.3 }
+    ],
+    "amaran 150c": [
+      { mod: "Bare 5600K", fc: 492, dist: 3.3, angle: 86 },
+      { mod: "+ Hyper Reflector", fc: 1451, dist: 3.3, angle: 63 },
+      { mod: "+ 2X Fresnel", fresnel: true, spot: { fc: 3112, angle: 15 }, flood: { fc: 1540, angle: 45 }, dist: 3.3 }
+    ],
+    "amaran 60x S": [
+      { mod: "Bare 5600K", fc: 225, dist: 3.3, angle: 109 },
+      { mod: "+ Hyper Reflector", fc: 3093, dist: 3.3, angle: 14 }
+    ],
+    "NOVA II 2x1": [
+      { mod: "Bare 5600K", fc: 2637, dist: 9.8, angle: 35 },
+      { mod: "+ Flat Diffuser", fc: 477, dist: 9.8, angle: 105 }
+    ]
+  },
+  "ARRI": {
+    "M18 (1.8k HMI)": [
+      { mod: "Spot 15°", fc: 1045, dist: 32.8, angle: 15 },
+      { mod: "Medium 40°", fc: 197, dist: 32.8, angle: 40 },
+      { mod: "Flood 58°", fc: 102, dist: 32.8, angle: 58 }
+    ],
+    "M40 (4k HMI)": [
+      { mod: "Spot 18°", fc: 7200, dist: 16.4, angle: 18 },
+      { mod: "Medium 30°", fc: 2397, dist: 16.4, angle: 30 },
+      { mod: "Flood 52°", fc: 1013, dist: 16.4, angle: 52 }
+    ],
+    "M90 (9k HMI)": [
+      { mod: "Spot 16°", fc: 4738, dist: 32.8, angle: 16 },
+      { mod: "Medium 30°", fc: 1342, dist: 32.8, angle: 30 },
+      { mod: "Flood 49°", fc: 704, dist: 32.8, angle: 49 }
+    ],
+    "L5-C": [
+      { mod: "Spot 15° 5600K", fc: 110, dist: 16.4, angle: 15 },
+      { mod: "Middle 30° 5600K", fc: 34, dist: 16.4, angle: 30 },
+      { mod: "Flood 50° 5600K", fc: 13, dist: 16.4, angle: 50 }
+    ],
+    "L7-C": [
+      { mod: "Spot 15° 5600K", fc: 251, dist: 16.4, angle: 15 },
+      { mod: "Middle 30° 5600K", fc: 74, dist: 16.4, angle: 30 },
+      { mod: "Flood 50° 5600K", fc: 30, dist: 16.4, angle: 50 }
+    ],
+    "L10-C": [
+      { mod: "Spot 15° 5600K", fc: 502, dist: 16.4, angle: 15 },
+      { mod: "Middle 30° 5600K", fc: 167, dist: 16.4, angle: 30 },
+      { mod: "Flood 50° 5600K", fc: 68, dist: 16.4, angle: 50 }
+    ],
+    "SkyPanel S30-C": [
+      { mod: "Std diffusion 5600K", fc: 26, dist: 16.4, angle: 105 },
+      { mod: "Intensifier 5600K", fc: 40, dist: 16.4, angle: 105 }
+    ],
+    "SkyPanel S60-C": [
+      { mod: "Std diffusion 5600K", fc: 51, dist: 16.4, angle: 105 },
+      { mod: "Intensifier 5600K", fc: 81, dist: 16.4, angle: 105 }
+    ],
+    "SkyPanel S120-C": [
+      { mod: "Std diffusion 5600K", fc: 52, dist: 16.4, angle: 105 },
+      { mod: "Intensifier 5600K", fc: 81, dist: 16.4, angle: 105 }
+    ],
+    "SkyPanel S360-C": [
+      { mod: "Std diffusion 5600K", fc: 216, dist: 16.4, angle: 105 },
+      { mod: "Intensifier 5600K", fc: 319, dist: 16.4, angle: 105 }
+    ],
+    "SkyPanel X22": [
+      { mod: "HyPer Optic (hard) 5600K", fc: 892, dist: 32.8, angle: 11 },
+      { mod: "Open-face 5600K", fc: 343, dist: 9.8, angle: 121 }
+    ],
+    "SkyPanel X23": [
+      { mod: "HyPer Optic (hard) 5600K", fc: 1338, dist: 32.8, angle: 11 },
+      { mod: "Open-face 5600K", fc: 514, dist: 9.8, angle: 121 }
+    ],
+    "SkyPanel S60 Pro": [
+      { mod: "Std diffusion 5600K", fc: 63, dist: 16.4, angle: 103 },
+      { mod: "Intensifier 5600K", fc: 93, dist: 16.4, angle: 71 }
+    ],
+    "Orbiter + Open Face 60°": [
+      { mod: "HiOut 5600K", fc: 1952, dist: 3.3, angle: 60 },
+      { mod: "HiCRI 5600K", fc: 1859, dist: 3.3, angle: 60 }
+    ],
+    "Orbiter + Open Face 30°": [
+      { mod: "HiOut 5600K", fc: 5390, dist: 3.3, angle: 30 },
+      { mod: "HiCRI 5600K", fc: 5102, dist: 3.3, angle: 30 }
+    ],
+    "Orbiter + Open Face 15°": [
+      { mod: "HiOut 5600K", fc: 16543, dist: 3.3, angle: 15 },
+      { mod: "HiCRI 5600K", fc: 15056, dist: 3.3, angle: 15 }
+    ]
+  },
+  "Nanlite": {
+    "Forza 60": [
+      { mod: "Bare 5600K", fc: 318, dist: 3.3, angle: 64 },
+      { mod: "+ Reflector", fc: 1637, dist: 3.3, angle: 55 },
+      { mod: "+ FL-11 Fresnel", fresnel: true, spot: { fc: 3863, angle: 10 }, flood: { fc: 702, angle: 45 }, dist: 3.3 }
+    ],
+    "Forza 60B II": [
+      { mod: "Bare 5600K", fc: 239, dist: 3.3, angle: 64 },
+      { mod: "+ Reflector", fc: 1309, dist: 3.3, angle: 55 },
+      { mod: "+ FL-11 Fresnel", fresnel: true, spot: { fc: 3224, angle: 10 }, flood: { fc: 2042, angle: 45 }, dist: 3.3 }
+    ],
+    "Forza 60C": [
+      { mod: "Bare 5600K", fc: 530, dist: 3.3, angle: 64 },
+      { mod: "+ Reflector", fc: 1190, dist: 3.3, angle: 55 },
+      { mod: "+ FL-11 Fresnel", fresnel: true, spot: { fc: 3486, angle: 10 }, flood: { fc: 1051, angle: 45 }, dist: 3.3 }
+    ],
+    "Forza 150": [
+      { mod: "Bare", fc: 638, dist: 3.3, angle: 64 },
+      { mod: "+ Reflector", fc: 2597, dist: 3.3, angle: 55 },
+      { mod: "+ FL-20 Fresnel", fresnel: true, spot: { fc: 6429, angle: 10 }, flood: { fc: 1584, angle: 45 }, dist: 3.3 }
+    ],
+    "Forza 300 II": [
+      { mod: "Bare", fc: 1326, dist: 3.3, angle: 64 },
+      { mod: "+ Reflector", fc: 6447, dist: 3.3, angle: 55 },
+      { mod: "+ FL-20 Fresnel", fresnel: true, spot: { fc: 18301, angle: 10 }, flood: { fc: 3638, angle: 45 }, dist: 3.3 }
+    ],
+    "Forza 300B II": [
+      { mod: "Bare 5600K", fc: 1281, dist: 3.3, angle: 64 },
+      { mod: "+ Reflector 5600K", fc: 6320, dist: 3.3, angle: 55 }
+    ],
+    "Forza 500 II": [
+      { mod: "Bare", fc: 2095, dist: 3.3, angle: 64 },
+      { mod: "+ Reflector", fc: 8576, dist: 3.3, angle: 55 },
+      { mod: "+ FL-20 Fresnel", fresnel: true, spot: { fc: 1938, angle: 10 }, flood: { fc: 650, angle: 45 }, dist: 9.8 }
+    ],
+    "Forza 500B II": [
+      { mod: "Bare 5600K", fc: 2055, dist: 3.3, angle: 64 },
+      { mod: "+ Reflector 5600K", fc: 6254, dist: 3.3, angle: 55 },
+      { mod: "+ FL-20 Fresnel", fresnel: true, spot: { fc: 1616, angle: 10 }, flood: { fc: 659, angle: 45 }, dist: 9.8 }
+    ],
+    "Forza 720": [
+      { mod: "Bare", fc: 2929, dist: 3.3, angle: 120 },
+      { mod: "+ Reflector", fc: 11520, dist: 3.3, angle: 55 },
+      { mod: "+ FL-20 Fresnel", fresnel: true, spot: { fc: 6195, angle: 10 }, flood: { fc: 1813, angle: 45 }, dist: 6.6 }
+    ],
+    "FS-300B": [
+      { mod: "Bare 5600K", fc: 1034, dist: 3.3, angle: 64 },
+      { mod: "+ Reflector 5600K", fc: 6248, dist: 3.3, angle: 55 },
+      { mod: "+ FL-20 Fresnel", fresnel: true, spot: { fc: 14678, angle: 10 }, flood: { fc: 961, angle: 45 }, dist: 3.3 }
+    ],
+    "FS-300C": [
+      { mod: "Bare 5600K", fc: 1677, dist: 3.3, angle: 64 },
+      { mod: "+ Reflector 5600K", fc: 4538, dist: 3.3, angle: 55 },
+      { mod: "+ FL-20 Fresnel", fresnel: true, spot: { fc: 13656, angle: 10 }, flood: { fc: 1086, angle: 45 }, dist: 3.3 }
+    ],
+    "PavoTube II 15C": [
+      { mod: "Bare 5600K", fc: 39, dist: 3.3, angle: 180 }
+    ],
+    "PavoTube II 30C": [
+      { mod: "Bare 5600K", fc: 60, dist: 3.3, angle: 180 }
+    ],
+    "FC-1200C": [
+      { mod: "Bare 5600K", fc: 647, dist: 9.8, angle: 90 },
+      { mod: "+ Reflector 5600K", fc: 1321, dist: 9.8, angle: 45 }
+    ],
+    "FC-1200B": [
+      { mod: "Bare 5600K", fc: 734, dist: 9.8, angle: 90 },
+      { mod: "+ 45° Reflector 5600K", fc: 1451, dist: 9.8, angle: 45 }
+    ]
+  },
+  "Nanlux": {
+    "Evoke 150C": [
+      { mod: "Bare 5600K", fc: 1130, dist: 3.3, angle: 47 },
+      { mod: "+ 25° reflector", fc: 7757, dist: 3.3, angle: 25 },
+      { mod: "+ 45° reflector", fc: 2065, dist: 3.3, angle: 45 }
+    ],
+    "Evoke 600C": [
+      { mod: "Bare 5600K", fc: 2287, dist: 3.3, angle: 65 },
+      { mod: "+ FL-22E Fresnel", fresnel: true, spot: { fc: 26207, angle: 15 }, flood: { fc: 2054, angle: 45 }, dist: 3.3 }
+    ],
+    "Evoke 1200B": [
+      { mod: "Bare 6500K", fc: 484, dist: 9.8, angle: 65 },
+      { mod: "+ 26° reflector", fc: 5671, dist: 9.8, angle: 26 },
+      { mod: "+ 45° reflector", fc: 1739, dist: 9.8, angle: 45 }
+    ],
+    "Evoke 2400B": [
+      { mod: "+ 45° reflector 5600K", fc: 3893, dist: 9.8, angle: 45 }
+    ],
+    "Evoke 5000B": [
+      { mod: "Bare 5600K", fc: 717, dist: 16.4, angle: 95 },
+      { mod: "+ 30° reflector 5600K", fc: 5295, dist: 16.4, angle: 30 },
+      { mod: "+ 45° reflector 5600K", fc: 2231, dist: 16.4, angle: 45 }
+    ]
+  },
+  "Creamsource": {
+    "Vortex4 (hard)": [
+      { mod: "Naked 20° 5600K", fc: 678, dist: 9.8, angle: 20 },
+      { mod: "Naked 20° 3200K", fc: 623, dist: 9.8, angle: 20 }
+    ],
+    "Vortex4 Soft": [
+      { mod: "Open Face 5600K", fc: 110, dist: 9.8, angle: 110 },
+      { mod: "Open Face 3200K", fc: 112, dist: 9.8, angle: 110 }
+    ],
+    "Vortex8 Soft": [
+      { mod: "Open Face 5600K", fc: 217, dist: 9.8, angle: 110 }
+    ]
+  },
+  "Litepanels": {
+    "Gemini 2x1 Soft": [
+      { mod: "5600K", fc: 100, dist: 9.8, angle: 110 },
+      { mod: "2700K", fc: 84, dist: 9.8, angle: 110 }
+    ],
+    "Astra 6X Daylight": [
+      { mod: "Bare 5600K", fc: 154, dist: 9.8, angle: 46 }
+    ]
+  },
+  "Godox": {
+    "KNOWLED MG6K": [
+      { mod: "Bare 5600K", fc: 587, dist: 16.4, angle: 90 },
+      { mod: "+ MGR30 reflector", fc: 3808, dist: 16.4, angle: 30 },
+      { mod: "+ MGR15 reflector", fc: 12266, dist: 16.4, angle: 15 }
+    ]
+  }
+};
+
+let unit = localStorage.getItem("slc-unit") || "imperial";
+let scenario = "point";
+let shutterType = "angle";
+let lastResult = null;
+
+const FT_PER_M = 3.28084;
+const FC_PER_LUX = 10.7639;
+
+function populateFixtures() {
+  const brandSel = $("fixtureBrand");
+  brandSel.innerHTML = '<option value="">— Select brand —</option>';
+  Object.keys(fixtureData).forEach(brand => {
+    const opt = document.createElement("option");
+    opt.value = brand;
+    opt.textContent = brand;
+    brandSel.appendChild(opt);
+  });
+  updateLights();
+}
+
+function updateLights() {
+  const brand = $("fixtureBrand").value;
+  const lightSel = $("fixtureLight");
+  lightSel.innerHTML = '<option value="">— Custom / enter manually —</option>';
+  if (brand && fixtureData[brand]) {
+    Object.keys(fixtureData[brand]).forEach(name => {
+      const opt = document.createElement("option");
+      opt.value = name;
+      opt.textContent = name;
+      lightSel.appendChild(opt);
+    });
+  }
+  updateModifiers();
+}
+
+function updateModifiers() {
+  const brand = $("fixtureBrand").value;
+  const light = $("fixtureLight").value;
+  const modSel = $("fixtureMod");
+  const note = $("fixtureNote");
+  modSel.innerHTML = "";
+  if (!brand || !light || !fixtureData[brand] || !fixtureData[brand][light]) {
+    modSel.disabled = true;
+    $("fresnelControl").classList.add("hidden");
+    if (note) note.textContent = "";
+    return;
+  }
+  modSel.disabled = false;
+  fixtureData[brand][light].forEach((m, i) => {
+    const opt = document.createElement("option");
+    opt.value = i;
+    opt.textContent = m.mod;
+    modSel.appendChild(opt);
+  });
+  updateFresnelControl();
+  applyFixture();
+}
+
+function updateFresnelControl() {
+  const brand = $("fixtureBrand").value;
+  const light = $("fixtureLight").value;
+  const modIdx = $("fixtureMod").value;
+  const ctrl = $("fresnelControl");
+  const note = $("fixtureNote");
+  if (!brand || !light || modIdx === "" || !fixtureData[brand] || !fixtureData[brand][light]) {
+    ctrl.classList.add("hidden");
+    if (note) note.textContent = "";
+    return;
+  }
+  const f = fixtureData[brand][light][modIdx];
+  if (!f || !f.fresnel) {
+    ctrl.classList.add("hidden");
+    return;
+  }
+  ctrl.classList.remove("hidden");
+  const minA = Math.min(f.spot.angle, f.flood.angle);
+  const maxA = Math.max(f.spot.angle, f.flood.angle);
+  $("fresnelRangeLabel").textContent = `(${minA}° – ${maxA}°)`;
+  $("fresnelSlider").min = minA;
+  $("fresnelSlider").max = maxA;
+  $("fresnelSlider").value = f.spot.angle;
+  $("fresnelAngleLabel").textContent = f.spot.angle + "°";
+  // CCT note for fresnel fixtures
+  if (note) {
+    const modName = f.mod || "";
+    let cct = f.cct || "";
+    if (!cct) {
+      if (/5600K/i.test(modName)) cct = "5600K";
+      else if (/3200K/i.test(modName)) cct = "3200K";
+    }
+    note.textContent = cct
+      ? `Photometrics measured at ${cct} (manufacturer published data). Intermediate angles are estimates.`
+      : "Photometrics measured at 5600K (manufacturer published data). Intermediate angles are estimates.";
+  }
+  applyFresnel();
+}
+
+function applyFresnel() {
+  const brand = $("fixtureBrand").value;
+  const light = $("fixtureLight").value;
+  const modIdx = $("fixtureMod").value;
+  if (!brand || !light || modIdx === "" || !fixtureData[brand] || !fixtureData[brand][light]) return;
+  const f = fixtureData[brand][light][modIdx];
+  if (!f || !f.fresnel) return;
+  const angle = parseFloat($("fresnelSlider").value);
+  const minA = Math.min(f.spot.angle, f.flood.angle);
+  const maxA = Math.max(f.spot.angle, f.flood.angle);
+  const t = (angle - minA) / (maxA - minA);
+  const spotIsMin = f.spot.angle < f.flood.angle;
+  const fc = spotIsMin
+    ? f.spot.fc + t * (f.flood.fc - f.spot.fc)
+    : f.flood.fc + t * (f.spot.fc - f.flood.fc);
+  const illum = unit === "metric" ? fc * FC_PER_LUX : fc;
+  const dist = unit === "metric" ? f.dist / FT_PER_M : f.dist;
+  $("illuminance").value = illum.toFixed(unit === "metric" ? 0 : 1);
+  $("refDistance").value = dist.toFixed(1);
+  $("beamAngle").value = angle.toFixed(0);
+  $("fresnelAngleLabel").textContent = angle.toFixed(0) + "° (estimate)";
+  if ($("illumVal")) $("illumVal").textContent = $("illuminance").value;
+  if ($("refVal")) $("refVal").textContent = $("refDistance").value;
+  if ($("beamVal")) $("beamVal").textContent = $("beamAngle").value + "°";
+  if ($("illuminanceNum")) $("illuminanceNum").value = $("illuminance").value;
+  if ($("refDistanceNum")) $("refDistanceNum").value = $("refDistance").value;
+  if ($("beamAngleNum")) $("beamAngleNum").value = $("beamAngle").value;
+  drawDiagram();
+}
+
+function applyFixture() {
+  const brand = $("fixtureBrand").value;
+  const light = $("fixtureLight").value;
+  const modIdx = $("fixtureMod").value;
+  const note = $("fixtureNote");
+  if (!brand || !light || modIdx === "" || !fixtureData[brand] || !fixtureData[brand][light]) {
+    if (note) note.textContent = "";
+    return;
+  }
+  const f = fixtureData[brand][light][modIdx];
+  if (!f) return;
+  if (f.fresnel) {
+    updateFresnelControl();
+    return;
+  }
+  const illum = unit === "metric" ? f.fc * FC_PER_LUX : f.fc;
+  const dist = unit === "metric" ? f.dist / FT_PER_M : f.dist;
+  $("illuminance").value = illum.toFixed(unit === "metric" ? 0 : 1);
+  $("refDistance").value = dist.toFixed(1);
+  $("beamAngle").value = f.angle;
+  $("fresnelControl").classList.add("hidden");
+  if ($("illumVal")) $("illumVal").textContent = $("illuminance").value;
+  if ($("refVal")) $("refVal").textContent = $("refDistance").value;
+  if ($("beamVal")) $("beamVal").textContent = $("beamAngle").value + "°";
+  if ($("illuminanceNum")) $("illuminanceNum").value = $("illuminance").value;
+  if ($("refDistanceNum")) $("refDistanceNum").value = $("refDistance").value;
+  if ($("beamAngleNum")) $("beamAngleNum").value = $("beamAngle").value;
+  // Clearer labeling for manufacturer assumptions (primarily CCT)
+  if (note) {
+    const modName = f.mod || "";
+    let cct = f.cct || "";
+    if (!cct) {
+      if (/5600K/i.test(modName)) cct = "5600K";
+      else if (/3200K/i.test(modName)) cct = "3200K";
+      else if (/daylight/i.test(modName)) cct = "5600K";
+      else if (/tungsten/i.test(modName)) cct = "3200K";
+    }
+    if (cct) {
+      note.textContent = `Photometrics measured at ${cct} (manufacturer published data).`;
+    } else {
+      // Most modern LED and HMI photometrics from manufacturers are published at 5600K
+      note.textContent = "Photometrics measured at 5600K (manufacturer published data). Verify on your unit.";
+    }
+  }
+  drawDiagram();
+}
+
+function $(id) { return document.getElementById(id); }
+function getVal(id) {
+  const numEl = $(id + "Num");
+  if (numEl && numEl.value !== "") {
+    const v = parseFloat(numEl.value);
+    if (!isNaN(v)) return v;
+  }
+  return parseFloat($(id).value) || 0;
+}
+function parseNum(id) {
+  const numEl = $(id + "Num");
+  if (numEl && numEl.value !== "") {
+    const v = parseFloat(numEl.value);
+    if (!isNaN(v)) return v;
+  }
+  const v = parseFloat($(id).value);
+  return isNaN(v) ? null : v;
+}
+
+function SolidAngle() {}
+SolidAngle.rectangle = (a, b, d) => 4 * Math.atan((a * b) / (d * Math.sqrt(a*a + b*b + d*d)));
+SolidAngle.circle = (r, d) => 2 * Math.PI * (1 - d / Math.sqrt(d*d + r*r));
+
+function fStop(fc, iso, shutter) {
+  return Math.sqrt(Math.max(fc, 0) * iso * shutter / 25.0);
+}
+
+function effectiveSource(beamDiameter, matW, matH, subjectDist) {
+  if (beamDiameter < matW && beamDiameter < matH) {
+    const r = beamDiameter / 2;
+    return { effW: beamDiameter, effH: beamDiameter, circle: true, omega: SolidAngle.circle(r, subjectDist) };
+  }
+  return { effW: matW, effH: matH, circle: false, omega: SolidAngle.rectangle(matW/2, matH/2, subjectDist) };
+}
+
+function toFt(v) { return unit === "metric" ? v * FT_PER_M : v; }
+function toFc(v) { return unit === "metric" ? v / FC_PER_LUX : v; }
+function fmtDist(ft) {
+  const v = unit === "metric" ? ft / FT_PER_M : ft;
+  return v.toFixed(2) + (unit === "metric" ? " m" : " ft");
+}
+function fmtIllum(fc) {
+  const v = unit === "metric" ? fc * FC_PER_LUX : fc;
+  return v.toFixed(2) + (unit === "metric" ? " lux" : " fc");
+}
+
+function updateLabels() {
+  const d = unit === "imperial" ? "ft" : "m";
+  const i = unit === "imperial" ? "fc" : "lux";
+  $("unitBtn").textContent = unit === "imperial" ? "ft" : "m";
+  // Update unit text only, keep value spans
+  const setUnit = (labelId, prefix, valId, val) => {
+    const el = $(labelId);
+    if (el) el.innerHTML = `${prefix} (${valId.includes("illum") ? i : d}): <span id="${valId}">${val}</span>`;
+  };
+  setUnit("illumLabel", "Illuminance", "illumVal", $("illuminance").value);
+  setUnit("refLabel", "Reference Distance", "refVal", $("refDistance").value);
+  setUnit("distLabel", "Distance to Subject", "distVal", $("distance").value);
+  setUnit("wLabel", "Width", "wVal", $("width").value);
+  setUnit("hLabel", "Height", "hVal", $("height").value);
+  setUnit("d1Label", "Light to Material", "d1Val", $("distanceToMaterial").value);
+  setUnit("d2Label", "Material to Subject", "d2Val", $("distanceToSubject").value);
+  setUnit("bwLabel", "Width", "bwVal", $("bounceWidth").value);
+  setUnit("bhLabel", "Height", "bhVal", $("bounceHeight").value);
+  setUnit("dBLabel", "Light to Bounce", "dBVal", $("distanceToBounceSurface").value);
+  setUnit("dwLabel", "Width", "dwVal", $("diffusionWidth").value);
+  setUnit("dhLabel", "Height", "dhVal", $("diffusionHeight").value);
+  setUnit("dBDLabel", "Bounce to Diffusion", "dBDVal", $("bounceToDistanceDiffusion").value);
+  setUnit("dSLabel", "Diffusion to Subject", "dSVal", $("diffusionToSubject").value);
+}
+
+function populateSelect(sel, mats, isDiff) {
+  sel.innerHTML = "";
+  mats.forEach((m, i) => {
+    const opt = document.createElement("option");
+    opt.value = i;
+    if (m.name === "Custom") opt.textContent = "Custom";
+    else if (isDiff) opt.textContent = `${m.name}  [T: ${m.value.toFixed(2)} / ${(m.bias||1.5).toFixed(1)}×]`;
+    else opt.textContent = `${m.name}  (${m.value.toFixed(2)})`;
+    sel.appendChild(opt);
+  });
+}
+
+function updateMaterialUI() {
+  const isBounce = scenario === "bounce";
+  const mats = isBounce ? bounceMaterials : diffusionMaterials;
+  populateSelect($("materialSelect"), mats, !isBounce);
+  $("bdTitle").textContent = isBounce ? "Bounce Parameters" : "Diffusion Parameters";
+  $("matLabel").textContent = isBounce ? "Bounce material" : "Diffusion material";
+  $("propLabel").textContent = isBounce ? "Reflectivity (0–1)" : "Transmissivity (0–1)";
+  $("customBiasField").classList.toggle("hidden", isBounce);
+  onMaterialChange();
+}
+
+function onMaterialChange() {
+  const sel = $("materialSelect");
+  const isBounce = scenario === "bounce";
+  const mats = isBounce ? bounceMaterials : diffusionMaterials;
+  const m = mats[sel.value];
+  const isCustom = m.name === "Custom";
+  $("customPropField").classList.toggle("hidden", !isCustom);
+  if (!isBounce) $("customBiasField").classList.toggle("hidden", !isCustom);
+  if (!isCustom) {
+    $("materialProperty").value = m.value.toFixed(2);
+    if (!isBounce) $("customForwardBias").value = (m.bias || 1.5).toFixed(1);
+  }
+}
+
+function updateBooklightMats() {
+  populateSelect($("bounceMatSelect"), bounceMaterials, false);
+  populateSelect($("diffMatSelect"), diffusionMaterials, true);
+  onBounceMatChange();
+  onDiffMatChange();
+}
+function onBounceMatChange() {
+  const m = bounceMaterials[$("bounceMatSelect").value];
+  const isCustom = m.name === "Custom";
+  $("bounceCustomField").classList.toggle("hidden", !isCustom);
+  if (!isCustom) $("bounceReflectivity").value = m.value.toFixed(2);
+}
+function onDiffMatChange() {
+  const m = diffusionMaterials[$("diffMatSelect").value];
+  const isCustom = m.name === "Custom";
+  $("diffCustomField").classList.toggle("hidden", !isCustom);
+  $("diffBiasField").classList.toggle("hidden", !isCustom);
+  if (!isCustom) {
+    $("diffusionTransmissivity").value = m.value.toFixed(2);
+    $("customDiffusionForwardBias").value = (m.bias || 1.5).toFixed(1);
+  }
+}
+
+function setScenario(s) {
+  scenario = s;
+  document.querySelectorAll("#scenarioPicker button").forEach(b => b.classList.toggle("active", b.dataset.s === s));
+  $("pointCard").classList.toggle("hidden", s !== "point");
+  $("bounceDiffCard").classList.toggle("hidden", s !== "bounce" && s !== "diffusion");
+  $("booklightCard").classList.toggle("hidden", s !== "booklight");
+  $("incidenceField").classList.toggle("hidden", s !== "bounce");
+  if (s === "bounce" || s === "diffusion") updateMaterialUI();
+  if (s === "booklight") updateBooklightMats();
+  drawDiagram();
+  calculate();
+  $("coverageCard").classList.add("hidden");
+}
+
+function setShutter(t) {
+  shutterType = t;
+  document.querySelectorAll("#shutterPicker button").forEach(b => b.classList.toggle("active", b.dataset.t === t));
+  $("speedFields").classList.toggle("hidden", t !== "speed");
+  $("angleFields").classList.toggle("hidden", t !== "angle");
+}
+
+function parseShutter() {
+  if (shutterType === "speed") {
+    const s = $("shutterSpeed").value.trim();
+    if (s.includes("/")) {
+      const parts = s.split("/");
+      const n = parseFloat(parts[0]), d = parseFloat(parts[1]);
+      if (!isNaN(n) && !isNaN(d) && d !== 0) return n / d;
+    }
+    const v = parseFloat(s);
+    return v > 0 ? v : null;
+  } else {
+    const a = parseNum("shutterAngle"), f = parseNum("fps");
+    if (a > 0 && f > 0) return a / (360 * f);
+    return null;
+  }
+}
+
+function drawDiagram() {
+  const svg = $("diagramSvg");
+  const w = 400, h = 200;
+  svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+  svg.innerHTML = "";
+  const ns = "http://www.w3.org/2000/svg";
+  function el(tag, attrs) {
+    const e = document.createElementNS(ns, tag);
+    for (const [k,v] of Object.entries(attrs)) e.setAttribute(k, v);
+    return e;
+  }
+  function text(x, y, t, fill="#8e8e93", size=11) {
+    const e = el("text", { x, y, fill, "font-size": size, "text-anchor": "middle", "paint-order": "stroke", stroke: "#1a1a1c", "stroke-width": 3 });
+    e.textContent = t;
+    return e;
+  }
+  function line(x1,y1,x2,y2,stroke,sw=1,dash="") {
+    return el("line", { x1,y1,x2,y2,stroke, "stroke-width": sw, "stroke-dasharray": dash });
+  }
+  function rect(x,y,w,h,fill,stroke,sw=1,dash="") {
+    return el("rect", { x, y, width:w, height:h, fill, stroke, "stroke-width":sw, "stroke-dasharray":dash, rx:2 });
+  }
+
+  if (scenario === "point") {
+    const d = getVal("distance");
+    const theta = getVal("beamAngle");
+    const unitLabel = unit === "metric" ? "m" : "ft";
+    const scale = 280 / Math.max(d, 1);
+    const lx = 40, sx = Math.min(360, lx + d * scale);
+    const cy = h * 0.42;
+    const beamHalf = Math.min(50, (d * Math.tan(theta * Math.PI / 360)) * scale * 0.4);
+    svg.appendChild(el("polygon", { points: `${lx},${cy-2} ${sx},${cy-beamHalf} ${sx},${cy+beamHalf} ${lx},${cy+2}`, fill: "rgba(255,214,10,0.18)" }));
+    svg.appendChild(line(lx+12, cy, sx-12, cy, "rgba(255,214,10,0.4)", 1, "6,4"));
+    svg.appendChild(el("circle", { cx:lx, cy, r:7, fill:"#ffd60a" }));
+    svg.appendChild(el("circle", { cx:sx, cy, r:6, fill:"#f2f2f7" }));
+    svg.appendChild(text(lx, cy+28, "Light"));
+    svg.appendChild(text(sx, cy+28, "Subject"));
+    svg.appendChild(line(lx, h*0.85, sx, h*0.85, "rgba(142,142,147,0.4)", 0.5));
+    svg.appendChild(text((lx+sx)/2, h*0.85+14, `${d} ${unitLabel}`, "#8e8e93", 10));
+    svg.appendChild(text(sx, cy-beamHalf-6, `${theta}°`, "#ffd60a", 9));
+  }
+  else if (scenario === "bounce") {
+    const d1 = getVal("distanceToMaterial");
+    const d2 = getVal("distanceToSubject");
+    const matW = getVal("width");
+    const matH = getVal("height");
+    const theta = getVal("beamAngle");
+    const inc = parseFloat($("incidenceAngle")?.value) || 0;
+    const rad = inc * Math.PI / 180;
+    const unitLabel = unit === "metric" ? "m" : "ft";
+    const total = d1 + d2;
+    const scale = 260 / Math.max(total, 1);
+    const bx = 90, by = 100;
+    const barH = 48;
+    const sx = Math.min(370, bx + d2 * scale);
+    const sy = by; // subject at same height so 0° is horizontal
+    const beamDia = 2 * d1 * Math.tan(theta * Math.PI / 360);
+    const coversMaterial = beamDia >= matW && beamDia >= matH;
+    const spillRatio = coversMaterial ? Math.min(1.8, beamDia / Math.max(matW, matH, 1)) : 1;
+    const beamHalfAtCard = coversMaterial ? barH * 0.5 * spillRatio : Math.min(barH * 0.45, (beamDia / Math.max(matW, matH, 1)) * barH * 0.4);
+    const lightR = Math.min(100, d1 * scale * 0.75);
+    // Normal is horizontal (to the right). Incidence angle moves light up.
+    const lx = Math.min(360, Math.max(20, bx + lightR * Math.cos(rad)));
+    const ly = Math.min(160, Math.max(16, by - lightR * Math.sin(rad)));
+    svg.appendChild(rect(bx-3, by-barH/2, 6, barH, "#3a3a3c", "#8e8e93"));
+    // Full beam cone (may spill past card)
+    svg.appendChild(el("polygon", { points: `${lx},${ly-2} ${bx+4},${by-beamHalfAtCard} ${bx+4},${by+beamHalfAtCard} ${lx},${ly+2}`, fill:"rgba(255,214,10,0.12)" }));
+    if (coversMaterial && spillRatio > 1.05) {
+      // Spill past edges
+      svg.appendChild(line(bx+4, by-barH/2, bx+4, by-beamHalfAtCard, "rgba(255,214,10,0.3)", 1, "2,2"));
+      svg.appendChild(line(bx+4, by+barH/2, bx+4, by+beamHalfAtCard, "rgba(255,214,10,0.3)", 1, "2,2"));
+    } else if (!coversMaterial) {
+      svg.appendChild(el("ellipse", { cx:bx+2, cy:by, rx:4, ry:beamHalfAtCard, fill:"rgba(255,214,10,0.25)", stroke:"rgba(255,214,10,0.6)", "stroke-width":1 }));
+    }
+    svg.appendChild(line(lx, ly, bx+3, by, "rgba(255,214,10,0.5)", 1));
+    svg.appendChild(el("polygon", { points: `${bx+5},${by-beamHalfAtCard*0.6} ${sx},${sy-12} ${sx},${sy+12} ${bx+5},${by+beamHalfAtCard*0.6}`, fill:"rgba(255,159,10,0.12)" }));
+    svg.appendChild(line(bx+4, by, sx, sy, "rgba(255,159,10,0.45)", 1));
+    svg.appendChild(line(bx+6, by, bx+28, by, "rgba(142,142,147,0.4)", 0.7, "3,2"));
+    if (inc > 0) svg.appendChild(text(bx+24, by-12, `${inc}°`, "#ffd60a", 9));
+    svg.appendChild(el("circle", { cx:lx, cy:ly, r:5, fill:"#ffd60a" }));
+    svg.appendChild(el("circle", { cx:sx, cy:sy, r:5, fill:"#f2f2f7" }));
+    svg.appendChild(text(lx, ly+16, "Light"));
+    svg.appendChild(text(sx, sy+16, "Subject"));
+    svg.appendChild(text(bx, by+barH/2+14, "Bounce"));
+    svg.appendChild(text(bx, by-barH/2-10, `${matW}×${matH}${unitLabel}`, "#8e8e93", 8));
+    svg.appendChild(text((lx+bx)/2, Math.min(ly, by)-8, `${d1}${unitLabel}`, "#8e8e93", 8));
+    svg.appendChild(text((bx+sx)/2, Math.max(by, sy)+12, `${d2}${unitLabel}`, "#8e8e93", 8));
+  }
+  else if (scenario === "diffusion") {
+    const d1 = getVal("distanceToMaterial");
+    const d2 = getVal("distanceToSubject");
+    const matW = getVal("width");
+    const matH = getVal("height");
+    const theta = getVal("beamAngle");
+    const unitLabel = unit === "metric" ? "m" : "ft";
+    const total = d1 + d2;
+    const scale = 280 / Math.max(total, 1);
+    const lx = 30, cy = h * 0.4;
+    const mx = Math.min(250, lx + d1 * scale);
+    const sx = Math.min(380, mx + d2 * scale);
+    const sh = 44;
+    const beamDia = 2 * d1 * Math.tan(theta * Math.PI / 360);
+    const coversMaterial = beamDia >= matW && beamDia >= matH;
+    const spillRatio = coversMaterial ? Math.min(1.6, beamDia / Math.max(matW, matH, 1)) : 1;
+    const beamHalf = coversMaterial ? sh * 0.5 * spillRatio : Math.min(sh * 0.4, (beamDia / Math.max(matW, matH, 1)) * sh * 0.35);
+    svg.appendChild(el("polygon", { points: `${lx},${cy-2} ${mx-3},${cy-beamHalf} ${mx-3},${cy+beamHalf} ${lx},${cy+2}`, fill:"rgba(255,214,10,0.12)" }));
+    if (coversMaterial && spillRatio > 1.05) {
+      svg.appendChild(line(mx-3, cy-sh/2, mx-3, cy-beamHalf, "rgba(255,214,10,0.3)", 1, "2,2"));
+      svg.appendChild(line(mx-3, cy+sh/2, mx-3, cy+beamHalf, "rgba(255,214,10,0.3)", 1, "2,2"));
+    } else if (!coversMaterial) {
+      svg.appendChild(el("ellipse", { cx:mx, cy, rx:5, ry:beamHalf, fill:"rgba(255,214,10,0.2)", stroke:"rgba(255,214,10,0.5)", "stroke-width":1 }));
+    }
+    svg.appendChild(el("polygon", { points: `${mx+3},${cy-sh*0.3} ${sx},${cy-h*0.2} ${sx},${cy+h*0.2} ${mx+3},${cy+sh*0.3}`, fill:"rgba(255,214,10,0.08)" }));
+    svg.appendChild(rect(mx-3, cy-sh/2, 6, sh, "rgba(100,210,255,0.12)", "rgba(100,210,255,0.4)", 1, "3,2"));
+    svg.appendChild(el("circle", { cx:lx, cy, r:6, fill:"#ffd60a" }));
+    svg.appendChild(el("circle", { cx:sx, cy, r:5, fill:"#f2f2f7" }));
+    svg.appendChild(text(lx, cy+sh/2+14, "Light"));
+    svg.appendChild(text(mx, cy+sh/2+14, "Diffusion"));
+    svg.appendChild(text(sx, cy+sh/2+14, "Subject"));
+    svg.appendChild(text(mx, cy-sh/2-6, `${matW}×${matH}${unitLabel}`, "#64d2ff", 8));
+    svg.appendChild(line(lx, h*0.87, mx, h*0.87, "rgba(142,142,147,0.4)", 0.5));
+    svg.appendChild(text((lx+mx)/2, h*0.87+12, `${d1}${unitLabel}`, "#8e8e93", 9));
+    svg.appendChild(line(mx, h*0.87, sx, h*0.87, "rgba(142,142,147,0.4)", 0.5));
+    svg.appendChild(text((mx+sx)/2, h*0.87+12, `${d2}${unitLabel}`, "#8e8e93", 9));
+  }
+  else if (scenario === "booklight") {
+    const d1 = getVal("distanceToBounceSurface");
+    const d2 = getVal("bounceToDistanceDiffusion");
+    const d3 = getVal("diffusionToSubject");
+    const theta = getVal("beamAngle");
+    const bounceH = getVal("bounceHeight");
+    const diffH = getVal("diffusionHeight");
+    const inc = parseFloat($("bounceIncidenceAngle")?.value) || 0;
+    const rad = inc * Math.PI / 180;
+    const unitLabel = unit === "metric" ? "m" : "ft";
+    const total = d1 + d2 + d3;
+    const scale = 240 / Math.max(total, 1);
+    const bx = 80, py = 100;
+    const bounceSh = 46;
+    const diffSh = 44;
+    const dx = Math.min(230, bx + d2 * scale);
+    const sx = Math.min(370, dx + d3 * scale);
+    const lightR = Math.min(80, d1 * scale * 0.7);
+    // 0° is horizontal; incidence moves light up
+    const lx = Math.min(340, Math.max(16, bx + lightR * Math.cos(rad)));
+    const ly = Math.min(160, Math.max(14, py - lightR * Math.sin(rad)));
+    const beamDia = 2 * d1 * Math.tan(theta * Math.PI / 360);
+    const covers = beamDia >= bounceH;
+    const spillRatio = covers ? Math.min(1.5, beamDia / bounceH) : 1;
+    const beamHalf = covers ? bounceSh * 0.5 * spillRatio : Math.min(bounceSh * 0.4, (beamDia / bounceH) * bounceSh * 0.35);
+    svg.appendChild(rect(bx-3, py-bounceSh/2, 6, bounceSh, "#3a3a3c", "#8e8e93"));
+    svg.appendChild(el("polygon", { points: `${lx},${ly-2} ${bx+4},${py-beamHalf} ${bx+4},${py+beamHalf} ${lx},${ly+2}`, fill:"rgba(255,214,10,0.14)" }));
+    svg.appendChild(line(lx, ly, bx+3, py, "rgba(255,214,10,0.5)", 1));
+    if (covers && spillRatio > 1.05) {
+      svg.appendChild(line(bx+4, py-bounceSh/2, bx+4, py-beamHalf, "rgba(255,214,10,0.3)", 1, "2,2"));
+      svg.appendChild(line(bx+4, py+bounceSh/2, bx+4, py+beamHalf, "rgba(255,214,10,0.3)", 1, "2,2"));
+    } else if (!covers) {
+      svg.appendChild(el("ellipse", { cx:bx+2, cy:py, rx:4, ry:beamHalf, fill:"rgba(255,214,10,0.25)", stroke:"rgba(255,214,10,0.6)", "stroke-width":1 }));
+    }
+    svg.appendChild(el("polygon", { points: `${bx+5},${py-beamHalf*0.5} ${dx-3},${py-5} ${dx-3},${py+5} ${bx+5},${py+beamHalf*0.5}`, fill:"rgba(255,159,10,0.1)" }));
+    svg.appendChild(el("polygon", { points: `${dx+4},${py-3} ${sx},${py-10} ${sx},${py+10} ${dx+4},${py+3}`, fill:"rgba(255,214,10,0.06)" }));
+    svg.appendChild(rect(dx-3, py-diffSh/2, 6, diffSh, "rgba(100,210,255,0.12)", "rgba(100,210,255,0.4)", 1, "3,2"));
+    svg.appendChild(line(bx+6, py, bx+24, py, "rgba(142,142,147,0.4)", 0.7, "3,2"));
+    svg.appendChild(el("circle", { cx:lx, cy:ly, r:5, fill:"#ffd60a" }));
+    svg.appendChild(el("circle", { cx:sx, cy:py, r:5, fill:"#f2f2f7" }));
+    svg.appendChild(text(lx, ly+16, "Light"));
+    svg.appendChild(text(bx, py+bounceSh/2+16, "Bounce"));
+    svg.appendChild(text(dx, py+diffSh/2+16, "Diff."));
+    svg.appendChild(text(sx, py+diffSh/2+16, "Subject"));
+    if (inc > 0) svg.appendChild(text(bx+22, py-14, `${inc}°`, "#ffd60a", 8));
+    svg.appendChild(text((lx+bx)/2, Math.min(ly, py)-6, `${d1}${unitLabel}`, "#8e8e93", 8));
+    svg.appendChild(text((bx+dx)/2, py-Math.max(bounceSh,diffSh)/2-6, `${d2}${unitLabel}`, "#8e8e93", 8));
+    svg.appendChild(text((dx+sx)/2, py+diffSh/2+6, `${d3}${unitLabel}`, "#8e8e93", 8));
+  }
+}
+
+function drawCoverage(result) {
+  const svg = $("coverageSvg");
+  svg.innerHTML = "";
+  const ns = "http://www.w3.org/2000/svg";
+  function el(tag, attrs) {
+    const e = document.createElementNS(ns, tag);
+    for (const [k,v] of Object.entries(attrs)) e.setAttribute(k, v);
+    return e;
+  }
+  const w=110, h=90, cx=55, cy=45, matW=w*0.85, matH=h*0.85;
+  svg.appendChild(el("rect", { x:cx-matW/2, y:cy-matH/2, width:matW, height:matH, fill:"none", stroke:"rgba(142,142,147,0.4)", "stroke-width":1.5, rx:3 }));
+  if (result.usingCircularBeam) {
+    const beamD = Math.min(matW, matH)*0.55;
+    svg.appendChild(el("circle", { cx, cy, r:beamD/2, fill:"rgba(255,214,10,0.18)", stroke:"rgba(255,214,10,0.5)", "stroke-width":1.5, "stroke-dasharray":"4,3" }));
+  } else {
+    svg.appendChild(el("rect", { x:cx-matW/2, y:cy-matH/2, width:matW, height:matH, fill:"rgba(255,214,10,0.12)", rx:3 }));
+  }
+  const t = el("text", { x:cx, y:cy-matH/2-7, fill:"#8e8e93", "font-size":9, "text-anchor":"middle" });
+  t.textContent = "Material";
+  svg.appendChild(t);
+
+  const div = $("coverageText");
+  if (result.usingCircularBeam) {
+    div.innerHTML = `<div class="title">Beam is smaller than the material</div>
+      <div class="detail">Beam diameter: ${fmtDist(result.beamDiameterAtFirstSurface)}</div>
+      <div class="note">The circular beam footprint is used as the effective light source for the solid angle calculation.</div>`;
+  } else {
+    const src = result.effectiveSourceWidth && result.effectiveSourceHeight
+      ? `<div class="detail">Source: ${fmtDist(result.effectiveSourceWidth)} × ${fmtDist(result.effectiveSourceHeight)}</div>` : "";
+    div.innerHTML = `<div class="title">Beam covers the full material</div>${src}
+      <div class="note">The entire material surface is used as the effective light source for the solid angle calculation.</div>`;
+  }
+  $("coverageCard").classList.remove("hidden");
+}
+
+function showResults(lines, fstop) {
+  const body = $("resultsBody");
+  body.innerHTML = "";
+  lines.forEach(line => {
+    const parts = line.split(": ");
+    if (parts.length >= 2) {
+      const row = document.createElement("div");
+      row.className = "result-row";
+      row.innerHTML = `<span class="label">${parts[0]}</span><span class="value">${parts.slice(1).join(": ")}</span>`;
+      body.appendChild(row);
+    }
+  });
+  if (fstop != null) {
+    const fs = document.createElement("div");
+    fs.className = "fstop-row";
+    fs.innerHTML = `<span class="fstop-label">f-stop:</span><span class="fstop">f/${fstop.toFixed(1)}</span>`;
+    body.appendChild(fs);
+  }
+  $("resultsCard").classList.remove("hidden");
+}
+
+function calculate() {
+  const E0raw = parseNum("illuminance");
+  const d0raw = parseNum("refDistance");
+  const theta = parseNum("beamAngle");
+  const S = parseNum("iso");
+  if (!(E0raw > 0)) return showResults(["Enter a valid illuminance value (must be > 0)."]);
+  if (!(d0raw > 0)) return showResults(["Enter a valid reference distance (must be > 0)."]);
+  if (!(theta > 0 && theta < 180)) return showResults(["Beam angle must be between 0° and 180°."]);
+  if (!(S > 0)) return showResults(["Enter a valid ISO (must be > 0)."]);
+
+  const E0 = toFc(E0raw);
+  const d0 = toFt(d0raw);
+  const t = parseShutter();
+  if (t == null) return showResults(["Enter a valid shutter speed or shutter angle + FPS."]);
+
+  lastResult = null;
+  $("coverageCard").classList.add("hidden");
+
+  if (scenario === "point") {
+    const d = toFt(parseNum("distance"));
+    if (!(d > 0)) return showResults(["Distance to subject must be > 0."]);
+    const E = E0 * Math.pow(d0 / d, 2);
+    const D = 2 * d * Math.tan(theta * Math.PI / 360);
+    const fs = fStop(E, S, t);
+    lastResult = { beamDiameterAtFirstSurface: D, usingCircularBeam: false };
+    showResults([
+      `Illuminance at subject: ${fmtIllum(E)}`,
+      `Beam diameter: ${fmtDist(D)}`
+    ], fs);
+  }
+  else if (scenario === "bounce" || scenario === "diffusion") {
+    const w = toFt(parseNum("width"));
+    const h = toFt(parseNum("height"));
+    const d1 = toFt(parseNum("distanceToMaterial"));
+    const d2 = toFt(parseNum("distanceToSubject"));
+    const prop = parseNum("materialProperty");
+    if (!(w > 0 && h > 0 && d1 > 0 && d2 > 0 && prop >= 0 && prop <= 1)) {
+      return showResults([`Check ${scenario === "bounce" ? "Bounce" : "Diffusion"} Parameters:`, "• All distances must be > 0", `• ${scenario === "bounce" ? "Reflectivity" : "Transmissivity"} must be 0–1`]);
+    }
+    const E1 = E0 * Math.pow(d0 / d1, 2);
+    const thetaInc = parseNum("incidenceAngle") || 0;
+    const cosInc = Math.cos(thetaInc * Math.PI / 180);
+    const E1eff = E1 * Math.max(0, cosInc);
+    const D = 2 * d1 * Math.tan(theta * Math.PI / 360);
+    const es = effectiveSource(D, w, h, d2);
+    let L, bias = 1;
+    if (scenario === "bounce") {
+      L = (prop * E1eff) / Math.PI;
+    } else {
+      bias = parseNum("customForwardBias");
+      if (!(bias >= 1 && bias <= 3)) return showResults(["Forward bias must be between 1.0 and 3.0."]);
+      L = (prop * E1eff * bias) / Math.PI;
+    }
+    const E2 = L * es.omega;
+    const fs = fStop(E2, S, t);
+    lastResult = {
+      beamDiameterAtFirstSurface: D,
+      effectiveSourceWidth: es.effW,
+      effectiveSourceHeight: es.effH,
+      usingCircularBeam: es.circle
+    };
+    showResults([
+      `Illuminance at surface: ${fmtIllum(E1eff)}` + (thetaInc !== 0 ? ` (× cos ${thetaInc}°)` : ""),
+      `Illuminance at subject: ${fmtIllum(E2)}`
+    ], fs);
+    drawCoverage(lastResult);
+  }
+  else if (scenario === "booklight") {
+    const bw = toFt(parseNum("bounceWidth"));
+    const bh = toFt(parseNum("bounceHeight"));
+    const d1 = toFt(parseNum("distanceToBounceSurface"));
+    const rho = parseNum("bounceReflectivity");
+    const dw = toFt(parseNum("diffusionWidth"));
+    const dh = toFt(parseNum("diffusionHeight"));
+    const d2 = toFt(parseNum("bounceToDistanceDiffusion"));
+    const tau = parseNum("diffusionTransmissivity");
+    const d3 = toFt(parseNum("diffusionToSubject"));
+    const bias = parseNum("customDiffusionForwardBias");
+    if (!(bw>0 && bh>0 && d1>0 && rho>=0 && rho<=1 && dw>0 && dh>0 && d2>0 && tau>=0 && tau<=1 && d3>0)) {
+      return showResults(["Check Booklight Parameters:", "• All distances must be > 0", "• Reflectivity and transmissivity must be 0–1"]);
+    }
+    if (!(bias >= 1 && bias <= 3)) return showResults(["Diffusion forward bias must be between 1.0 and 3.0."]);
+
+    const E_bounce = E0 * Math.pow(d0 / d1, 2);
+    const thetaIncB = parseNum("bounceIncidenceAngle") || 0;
+    const cosIncB = Math.cos(thetaIncB * Math.PI / 180);
+    const E_bounce_eff = E_bounce * Math.max(0, cosIncB);
+    const D_beam = 2 * d1 * Math.tan(theta * Math.PI / 360);
+    const es = effectiveSource(D_beam, bw, bh, d2);
+    const L_bounce = (rho * E_bounce_eff) / Math.PI;
+    const E_diffusion = L_bounce * es.omega;
+    const omegaDiffusion = SolidAngle.rectangle(dw/2, dh/2, d3);
+    const L_diffusion = (tau * E_diffusion * bias) / Math.PI;
+    const E_subject = L_diffusion * omegaDiffusion;
+    const fs = fStop(E_subject, S, t);
+
+    lastResult = {
+      beamDiameterAtFirstSurface: D_beam,
+      effectiveSourceWidth: es.circle ? es.effW : bw,
+      effectiveSourceHeight: es.circle ? es.effH : bh,
+      usingCircularBeam: es.circle
+    };
+    showResults([
+      `At bounce: ${fmtIllum(E_bounce_eff)}` + (thetaIncB !== 0 ? ` (× cos ${thetaIncB}°)` : ""),
+      `At diffusion: ${fmtIllum(E_diffusion)}`,
+      `At subject: ${fmtIllum(E_subject)}`
+    ], fs);
+    drawCoverage(lastResult);
+  }
+}
+
+function clearAll() {
+  document.querySelectorAll("input").forEach(i => {
+    if (!["iso","shutterAngle","fps","customForwardBias","customDiffusionForwardBias"].includes(i.id)) i.value = "";
+  });
+  $("iso").value = "800";
+  $("shutterAngle").value = "180";
+  $("fps").value = "24";
+  $("customForwardBias").value = "1.5";
+  $("customDiffusionForwardBias").value = "1.5";
+  $("incidenceAngle").value = "0";
+  $("bounceIncidenceAngle").value = "0";
+  $("incLabel").textContent = "0°";
+  $("bounceIncLabel").textContent = "0°";
+  $("resultsCard").classList.add("hidden");
+  $("coverageCard").classList.add("hidden");
+  lastResult = null;
+  setScenario("point");
+  setShutter("angle");
+}
+
+// Events
+$("unitBtn").onclick = () => {
+  unit = unit === "imperial" ? "metric" : "imperial";
+  localStorage.setItem("slc-unit", unit);
+  updateLabels();
+};
+$("clearBtn").onclick = clearAll;
+$("aboutBtn").onclick = () => {
+  $("calcView").classList.toggle("hidden");
+  $("aboutView").classList.toggle("hidden");
+  $("aboutBtn").textContent = $("aboutView").classList.contains("hidden") ? "ⓘ" : "✕";
+};
+
+document.querySelectorAll("#scenarioPicker button").forEach(b => b.onclick = () => setScenario(b.dataset.s));
+document.querySelectorAll("#shutterPicker button").forEach(b => b.onclick = () => setShutter(b.dataset.t));
+$("materialSelect").onchange = () => { onMaterialChange(); calculate(); };
+$("bounceMatSelect").onchange = () => { onBounceMatChange(); calculate(); };
+$("diffMatSelect").onchange = () => { onDiffMatChange(); calculate(); };
+$("materialProperty").oninput = calculate;
+$("customForwardBias").oninput = calculate;
+$("bounceReflectivity").oninput = calculate;
+$("diffusionTransmissivity").oninput = calculate;
+$("customDiffusionForwardBias").oninput = calculate;
+$("iso").oninput = calculate;
+$("shutterSpeed").oninput = calculate;
+$("shutterAngle").oninput = calculate;
+$("fps").oninput = calculate;
+$("incidenceAngle").oninput = () => {
+  $("incLabel").textContent = $("incidenceAngle").value + "°";
+  drawDiagram();
+  calculate();
+};
+$("bounceIncidenceAngle").oninput = () => {
+  $("bounceIncLabel").textContent = $("bounceIncidenceAngle").value + "°";
+  drawDiagram();
+  calculate();
+};
+
+$("fixtureBrand").onchange = () => {
+  updateLights();
+  $("basicParamsCard").classList.toggle("hidden", $("fixtureLight").value !== "");
+  calculate();
+};
+$("fixtureLight").onchange = () => {
+  updateModifiers();
+  $("basicParamsCard").classList.toggle("hidden", $("fixtureLight").value !== "");
+  calculate();
+};
+$("fixtureMod").onchange = () => {
+  applyFixture();
+  $("basicParamsCard").classList.toggle("hidden", $("fixtureLight").value !== "");
+  calculate();
+};
+function wireSlider(id, labelId, suffix="") {
+  const el = $(id);
+  if (!el) return;
+  const numId = id + "Num";
+  const numEl = $(numId);
+  const update = () => {
+    if ($(labelId)) $(labelId).textContent = el.value + suffix;
+    if (numEl) numEl.value = el.value;
+    drawDiagram();
+    calculate();
+  };
+  el.oninput = update;
+  if (numEl) {
+    numEl.oninput = () => {
+      const v = parseFloat(numEl.value);
+      if (!isNaN(v)) {
+        // Allow typed values beyond slider max; clamp slider position only
+        el.value = Math.min(Math.max(v, parseFloat(el.min) || 0), parseFloat(el.max) || v);
+        if ($(labelId)) $(labelId).textContent = numEl.value + suffix;
+        drawDiagram();
+        calculate();
+      }
+    };
+  }
+  update();
+}
+wireSlider("illuminance", "illumVal");
+wireSlider("refDistance", "refVal");
+wireSlider("beamAngle", "beamVal", "°");
+wireSlider("distance", "distVal");
+wireSlider("width", "wVal");
+wireSlider("height", "hVal");
+$("width").oninput = () => {
+  if ($("linkSize").checked) {
+    $("height").value = $("width").value;
+    $("hVal").textContent = $("width").value;
+  }
+  $("wVal").textContent = $("width").value;
+  drawDiagram();
+  calculate();
+};
+$("height").oninput = () => {
+  if ($("linkSize").checked) {
+    $("width").value = $("height").value;
+    $("wVal").textContent = $("height").value;
+  }
+  $("hVal").textContent = $("height").value;
+  drawDiagram();
+  calculate();
+};
+wireSlider("distanceToMaterial", "d1Val");
+wireSlider("distanceToSubject", "d2Val");
+wireSlider("bounceWidth", "bwVal");
+wireSlider("bounceHeight", "bhVal");
+$("bounceWidth").oninput = () => {
+  if ($("linkBounceSize").checked) {
+    $("bounceHeight").value = $("bounceWidth").value;
+    $("bhVal").textContent = $("bounceWidth").value;
+  }
+  $("bwVal").textContent = $("bounceWidth").value;
+  drawDiagram();
+  calculate();
+};
+$("bounceHeight").oninput = () => {
+  if ($("linkBounceSize").checked) {
+    $("bounceWidth").value = $("bounceHeight").value;
+    $("bwVal").textContent = $("bounceHeight").value;
+  }
+  $("bhVal").textContent = $("bounceHeight").value;
+  drawDiagram();
+  calculate();
+};
+wireSlider("distanceToBounceSurface", "dBVal");
+wireSlider("diffusionWidth", "dwVal");
+wireSlider("diffusionHeight", "dhVal");
+$("diffusionWidth").oninput = () => {
+  if ($("linkDiffSize") && $("linkDiffSize").checked) {
+    $("diffusionHeight").value = $("diffusionWidth").value;
+    if ($("dhVal")) $("dhVal").textContent = $("diffusionWidth").value;
+  }
+  if ($("dwVal")) $("dwVal").textContent = $("diffusionWidth").value;
+  drawDiagram();
+  calculate();
+};
+$("diffusionHeight").oninput = () => {
+  if ($("linkDiffSize") && $("linkDiffSize").checked) {
+    $("diffusionWidth").value = $("diffusionHeight").value;
+    if ($("dwVal")) $("dwVal").textContent = $("diffusionHeight").value;
+  }
+  if ($("dhVal")) $("dhVal").textContent = $("diffusionHeight").value;
+  drawDiagram();
+  calculate();
+};
+wireSlider("bounceToDistanceDiffusion", "dBDVal");
+wireSlider("diffusionToSubject", "dSVal");
+
+$("fresnelSlider").oninput = () => { applyFresnel(); calculate(); };
+$("incidenceAngle").oninput = () => {
+  $("incLabel").textContent = $("incidenceAngle").value + "°";
+  drawDiagram();
+  calculate();
+};
+$("bounceIncidenceAngle").oninput = () => {
+  $("bounceIncLabel").textContent = $("bounceIncidenceAngle").value + "°";
+  drawDiagram();
+  calculate();
+};
+
+$("howTab").onclick = () => {
+  $("howTab").classList.add("active");
+  $("matTab").classList.remove("active");
+  $("howContent").classList.remove("hidden");
+  $("matContent").classList.add("hidden");
+};
+$("matTab").onclick = () => {
+  $("matTab").classList.add("active");
+  $("howTab").classList.remove("active");
+  $("matContent").classList.remove("hidden");
+  $("howContent").classList.add("hidden");
+};
+
+// Init
+updateLabels();
+populateFixtures();
+setScenario("point");
+setShutter("angle");
+drawDiagram();
+calculate();
+$("basicParamsCard").classList.toggle("hidden", $("fixtureLight").value !== "");
+</script>
+</body>
+</html>
