@@ -43,8 +43,8 @@
     .diagram-card { position: static; box-shadow: none; border: 1px solid #48484a; }
   }
   @media (max-width: 899px) {
-    .container { display: block; padding-top: 0; }
-    .side-col { }
+    .container { display: block; }
+    .side-col { padding-top: 280px; }
     .diagram-card {
       position: fixed;
       top: 8px;
@@ -54,10 +54,9 @@
       background: #1a1a1c;
       border: 1px solid #48484a;
       box-shadow: 0 8px 24px rgba(0,0,0,0.6);
-      max-height: 42vh;
-      overflow-y: auto;
     }
-    .main-col { padding-top: 46vh; }
+    .main-col { padding-top: 0; }
+    #resultsCard, #coverageCard { margin-top: 12px; }
   }
   header {
     display: flex;
@@ -170,15 +169,15 @@
     <div class="card diagram-card">
       <h3>Light Path</h3>
       <svg id="diagramSvg" class="diagram-svg" viewBox="0 0 400 200"></svg>
-      <div id="resultsCard" class="card hidden" style="margin:12px 0 0; padding:12px; background:#1c1c1e; border:none;">
-        <div id="resultsBody"></div>
-      </div>
-      <div class="card hidden" id="coverageCard" style="margin:12px 0 0; padding:12px; background:#1c1c1e; border:none;">
-        <h3 style="font-size:14px; margin-bottom:8px;">Beam Coverage</h3>
-        <div class="coverage-row">
-          <svg id="coverageSvg" class="coverage-svg" viewBox="0 0 110 90"></svg>
-          <div class="coverage-text" id="coverageText"></div>
-        </div>
+    </div>
+    <div id="resultsCard" class="card hidden" style="margin:12px 0 0; padding:12px; background:#1c1c1e;">
+      <div id="resultsBody"></div>
+    </div>
+    <div class="card hidden" id="coverageCard" style="margin:12px 0 0; padding:12px; background:#1c1c1e;">
+      <h3 style="font-size:14px; margin-bottom:8px;">Beam Coverage</h3>
+      <div class="coverage-row">
+        <svg id="coverageSvg" class="coverage-svg" viewBox="0 0 110 90"></svg>
+        <div class="coverage-text" id="coverageText"></div>
       </div>
     </div>
   </div>
