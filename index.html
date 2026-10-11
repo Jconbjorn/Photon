@@ -1511,7 +1511,16 @@ function calculate() {
     const es = effectiveSource(D_beam, bw, bh, d2);
     const L_bounce = (rho * E_bounce_eff) / Math.PI;
     const E_diffusion = L_bounce * es.omega;
-    const omegaDiffusion = SolidAngle.rectangle(dw/2, dh/2, d3);
+
+    // Realistic diffusion size: only the area illuminated by the bounce contributes.
+    // Bounce effective size limits the footprint on the diffusion plane.
+    // Intersection of that footprint with the actual diffusion size is the effective source.
+    const bounceEffW = es.effW;
+    const bounceEffH = es.effH;
+    const illumW = Math.min(dw, bounceEffW);
+    const illumH = Math.min(dh, bounceEffH);
+    const omegaDiffusion = SolidAngle.rectangle(illumW / 2, illumH / 2, d3);
+
     const L_diffusion = (tau * E_diffusion * bias) / Math.PI;
     const E_subject = L_diffusion * omegaDiffusion;
     const fs = fStop(E_subject, S, t);
@@ -1520,12 +1529,14 @@ function calculate() {
       beamDiameterAtFirstSurface: D_beam,
       effectiveSourceWidth: es.circle ? es.effW : bw,
       effectiveSourceHeight: es.circle ? es.effH : bh,
-      usingCircularBeam: es.circle
+      usingCircularBeam: es.circle,
+      diffusionEffectiveWidth: illumW,
+      diffusionEffectiveHeight: illumH
     };
     showResults([
       `At bounce: ${fmtIllum(E_bounce_eff)}` + (thetaIncB !== 0 ? ` (× cos ${thetaIncB}°)` : ""),
       `At diffusion: ${fmtIllum(E_diffusion)}`,
-      `At subject: ${fmtIllum(E_subject)}`
+      `At subject: ${fmtIllum(E_subject)}` + (illumW < dw || illumH < dh ? ` (diffusion limited by bounce footprint)` : "")
     ], fs);
     drawCoverage(lastResult);
   }
