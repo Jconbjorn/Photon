@@ -1047,11 +1047,24 @@ function fStop(fc, iso, shutter) {
 }
 
 function effectiveSource(beamDiameter, matW, matH, subjectDist) {
-  if (beamDiameter < matW && beamDiameter < matH) {
+  // Beam footprint is a circle of diameter beamDiameter.
+  // Effective source is the intersection of that circle with the rectangular material.
+  const beamSmallerThanBoth = beamDiameter < matW && beamDiameter < matH;
+  if (beamSmallerThanBoth) {
     const r = beamDiameter / 2;
     return { effW: beamDiameter, effH: beamDiameter, circle: true, omega: SolidAngle.circle(r, subjectDist) };
   }
-  return { effW: matW, effH: matH, circle: false, omega: SolidAngle.rectangle(matW/2, matH/2, subjectDist) };
+  // Beam covers one or both dimensions — use the overlapping rectangular area.
+  const effW = Math.min(beamDiameter, matW);
+  const effH = Math.min(beamDiameter, matH);
+  const coversFull = (effW >= matW - 0.01) && (effH >= matH - 0.01);
+  return {
+    effW,
+    effH,
+    circle: false,
+    coversFull,
+    omega: SolidAngle.rectangle(effW / 2, effH / 2, subjectDist)
+  };
 }
 
 function toFt(v) { return unit === "metric" ? v * FT_PER_M : v; }
@@ -1390,6 +1403,10 @@ function drawCoverage(result) {
     div.innerHTML = `<div class="title">Beam is smaller than the material</div>
       <div class="detail">Beam diameter: ${fmtDist(result.beamDiameterAtFirstSurface)}</div>
       <div class="note">The circular beam footprint is used as the effective light source for the solid angle calculation.</div>`;
+  } else if (result.coversFull === false) {
+    div.innerHTML = `<div class="title">Beam partially covers the material</div>
+      <div class="detail">Effective source: ${fmtDist(result.effectiveSourceWidth)} × ${fmtDist(result.effectiveSourceHeight)}</div>
+      <div class="note">The beam footprint is smaller than the material in one dimension. Only the overlapping area is used.</div>`;
   } else {
     const src = result.effectiveSourceWidth && result.effectiveSourceHeight
       ? `<div class="detail">Source: ${fmtDist(result.effectiveSourceWidth)} × ${fmtDist(result.effectiveSourceHeight)}</div>` : "";
@@ -1479,7 +1496,8 @@ function calculate() {
       beamDiameterAtFirstSurface: D,
       effectiveSourceWidth: es.effW,
       effectiveSourceHeight: es.effH,
-      usingCircularBeam: es.circle
+      usingCircularBeam: es.circle,
+      coversFull: es.coversFull !== false
     };
     showResults([
       `Illuminance at surface: ${fmtIllum(E1eff)}` + (thetaInc !== 0 ? ` (× cos ${thetaInc}°)` : ""),
@@ -1527,9 +1545,10 @@ function calculate() {
 
     lastResult = {
       beamDiameterAtFirstSurface: D_beam,
-      effectiveSourceWidth: es.circle ? es.effW : bw,
-      effectiveSourceHeight: es.circle ? es.effH : bh,
+      effectiveSourceWidth: es.effW,
+      effectiveSourceHeight: es.effH,
       usingCircularBeam: es.circle,
+      coversFull: es.coversFull !== false,
       diffusionEffectiveWidth: illumW,
       diffusionEffectiveHeight: illumH
     };
