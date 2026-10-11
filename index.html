@@ -1391,6 +1391,11 @@ function drawCoverage(result) {
   if (result.usingCircularBeam) {
     const beamD = Math.min(matW, matH)*0.55;
     svg.appendChild(el("circle", { cx, cy, r:beamD/2, fill:"rgba(255,214,10,0.18)", stroke:"rgba(255,214,10,0.5)", "stroke-width":1.5, "stroke-dasharray":"4,3" }));
+  } else if (result.coversFull === false) {
+    // Partial coverage: show material outline + smaller filled overlap
+    const overlapW = matW * 0.55;
+    const overlapH = matH * 0.55;
+    svg.appendChild(el("rect", { x:cx-overlapW/2, y:cy-overlapH/2, width:overlapW, height:overlapH, fill:"rgba(255,214,10,0.22)", stroke:"rgba(255,214,10,0.6)", "stroke-width":1.5, "stroke-dasharray":"3,2", rx:2 }));
   } else {
     svg.appendChild(el("rect", { x:cx-matW/2, y:cy-matH/2, width:matW, height:matH, fill:"rgba(255,214,10,0.12)", rx:3 }));
   }
